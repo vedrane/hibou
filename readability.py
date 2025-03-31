@@ -1,3 +1,4 @@
+import math
 import re
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize, SyllableTokenizer
@@ -13,11 +14,11 @@ def flesch_kincaid_grade(text, words, num_words, sentences, syllables):
 def automated_readability_index(text, chars, sentences):
     text = text.replace('\n', ' ')
     words = len(re.findall(r'\s+', text))
-    return round(((4.71 * (chars / words)) + (0.5 * (words / sentences))) - 21.43, 2)
+    return math.ceil(((4.71 * (chars / words)) + (0.5 * (words / sentences))) - 21.43)
 
 
 def coleman_liau_index(chars, words, sentences):
     L = (chars / words) * 100
     S = (sentences / words) * 100
 
-    return round((0.0588 * L) - (0.296 * S) - 15.8, 2)
+    return math.ceil((0.0588 * L) - (0.296 * S) - 15.8)

@@ -1,12 +1,16 @@
-import math
 import re
 import sys
+import time
+from math import sqrt, log10
+
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize, SyllableTokenizer
 from nltk.corpus import cmudict
 from nltk.sentiment import SentimentIntensityAnalyzer
-from analysis import heuristic_syllable_count
+
+from analysis import average_word_length, average_word_per_sentence, heuristic_syllable_count
 from readability import flesch_reading_ease, flesch_kincaid_grade, automated_readability_index, coleman_liau_index
+from insights import readability_insights, lexical_diversity_insights, sentiment_insights
 
 nltk.download('punkt', quiet=True)
 nltk.download('cmudict', quiet=True)
@@ -23,11 +27,11 @@ else:
     print("Usage: hibou [file]\n       python main.py [file]")
     sys.exit(1)
 
-
 try:
-    with open(sys.argv[1], 'r', encoding='utf-8') as file:
+    with open(arg, 'r', encoding='utf-8') as file:
         text = file.read().strip()
         if(text):
+            start = time.time()
             chars = len(re.findall(r'[a-zA-Z0-9]', text))
             sentences = len(sent_tokenize(text))
 
@@ -46,6 +50,12 @@ try:
 
             types = len(set(words))
             tokens = num_words
+            ttr = round((types / tokens), 2)
+
+            ari = automated_readability_index(text, chars, sentences)
+            cli = coleman_liau_index(chars, num_words, sentences)
+            fkgl = flesch_kincaid_grade(text, words, num_words, sentences, syllables)
+            fres = flesch_reading_ease(text, words, num_words, sentences, syllables)
 
             print("RESULTS\n----------------")
             print("DATA")
@@ -55,23 +65,40 @@ try:
             print("Total Syllables (Heuristic):\t\t", heuristic_syllable_count(text))
             print("Total Syllables (NLTK):\t\t\t", syllables)
 
+            print("\nAVERAGES")
+            print("Average Word Length:\t\t\t", average_word_length(words))
+            print("Average Words per Sentence:\t\t", average_word_per_sentence(words, sentences))
+
             print("\nREADABILITY")
-            print("Automated Readability Index (ARI):\t", automated_readability_index(text, chars, sentences))
-            print("Coleman-Liau Index:\t\t\t", coleman_liau_index(chars, num_words, sentences))
-            print("Flesch Reading-Ease Score (FRES):\t", flesch_reading_ease(text, words, num_words, sentences, syllables))
-            print("Flesch-Kincaid Grade Level (FKGL):\t", flesch_kincaid_grade(text, words, num_words, sentences, syllables))
+            print("Automated Readability Index (ARI):\t", ari)
+            print("Coleman-Liau Index:\t\t\t", cli)
+            print("Flesch Reading-Ease Score (FRES):\t", fres)
+            print("Flesch-Kincaid Grade Level (FKGL):\t", fkgl)
 
             print("\nLEXICAL DIVERSITY")
-            print("Type-Token Ratio (TTR):\t\t\t", round((types / tokens), 2))
-            print("Corrected Type-Token Ratio (CTTR):\t", round((types / math.sqrt(2 * tokens)), 2))
-            print("Log Type-Token Ratio (LTTR):\t\t", round((math.log10(types) / math.log10(tokens)), 2))
-            print("Root Type-Token Ratio (RTTR):\t\t", round((types / math.sqrt(tokens)), 2))
+            print("Average Word Frequency (AWF):\t\t", round(1/ttr, 2))
+            print("Type-Token Ratio (TTR):\t\t\t", ttr)
+            print("Corrected Type-Token Ratio (CTTR):\t", round((types / sqrt(2 * tokens)), 2))
+            print("Log Type-Token Ratio (LTTR):\t\t", round((log10(types) / log10(tokens)), 2))
+            print("Root Type-Token Ratio (RTTR):\t\t", round((types / sqrt(tokens)), 2))
+            print("Maas a2:\t\t\t\t", round((((log10(tokens) - log10(types)) / log10(tokens)**2)), 2))
+            print("Summer's Index (S):\t\t\t", round((log10(log10(types)) / log10(log10(tokens))), 2))
+            print("Uber index (U):\t\t\t\t", round(((log10(tokens)**2) / (log10(tokens) - log10(types))), 2))
 
             print("\nSENTIMENT ANALYSIS (VADER)")
-            print("Positive Sentiment:\t\t\t", sentiment_score['pos'])
-            print("Neutral Sentiment:\t\t\t", sentiment_score['neu'])
-            print("Negative Sentiment:\t\t\t", sentiment_score['neg'])
-            print("Compound Sentiment:\t\t\t", sentiment_score['compound'])
+            print("Positive Sentiment:\t\t\t", round(sentiment_score['pos'], 2))
+            print("Neutral Sentiment:\t\t\t", round(sentiment_score['neu'], 2))
+            print("Negative Sentiment:\t\t\t", round(sentiment_score['neg'], 2))
+            print("Compound Sentiment:\t\t\t", round(sentiment_score['compound'], 2))
+
+            print("\nINSIGHTS")
+            print(readability_insights(ari, fres))
+            print(lexical_diversity_insights(ttr))
+            print(sentiment_insights(sentiment_score['pos'], sentiment_score['neg'], sentiment_score['neu']))
+
+            print("\nTIME")
+            print(round(time.time() - start, 2), "seconds")
+
 except FileNotFoundError:
     print(f"Error: File not found.")
     sys.exit(1)

@@ -76,3 +76,9 @@ def heuristic_syllable_count(word):
 
     # Calculate final syllable count
     return max(1, (vowels - disc) + add)
+
+def average_word_length(words):
+    return round(sum(len(word) for word in words) / len(words), 2)
+
+def average_word_per_sentence(words, sentences):
+    return round(len(words) / sentences, 2)
